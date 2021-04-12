@@ -1,6 +1,5 @@
 
 void ConvertKeyToHex(String keyStr) {
-  Serial.println(keyStr);
   int i, j;
   int keyValue[11] = {};
   for (i = 4; i <= keyStr.length(); i += 4) {
@@ -19,7 +18,7 @@ void ConvertKeyToHex(String keyStr) {
   }
   //  Serial.print(":");
   for (i = 0; i < 11; i++) {
-//        Serial.write(keyValue[i]);
+      Serial.write(keyValue[i]);
 //    Serial.print(keyValue[i]);
 //    Serial.print("-");
   }
