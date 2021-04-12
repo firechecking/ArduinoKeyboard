@@ -92,6 +92,7 @@ class KeyStateDecoder():
                 if key.startswith('example'): continue
                 pyautogui.keyUp(key.split("_")[0], _pause=False)
         for idx, key in keycodes.items():
+            if (idx in self.preKeyActions) and (key == self.preKeyActions[idx]): continue
             if (len(key) > 0) and (not key in self.preKeyActions):
                 if key.startswith("MO") or key.startswith("TG") or key.startswith("TO") or key.startswith('LOWER'): continue
                 if len(key) < 1: continue
@@ -101,4 +102,6 @@ class KeyStateDecoder():
 
 
 if __name__ == "__main__":
-    pyautogui.hotkey('shift', 'c')
+    for i in range(10):
+        pyautogui.keyDown('a')
+        time.sleep(1)
