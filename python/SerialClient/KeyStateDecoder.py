@@ -88,12 +88,15 @@ class KeyStateDecoder():
         keycodes = self.decodeKeyAction()
         self.parseQuantum(keycodes)
 
+        # release key
         for idx, key in self.preKeyActions.items():
             if not idx in keycodes:
                 if key.startswith("MO") or key.startswith("TG") or key.startswith("TO") or key.startswith('LOWER'): continue
                 if len(key) < 1: continue
                 pyautogui.keyUp(key.split("_")[0], _pause=False)
                 self.history['sendCount'][idx] = 0
+        # press key
+        for idx, key in keycodes.items():
             if (idx in self.preKeyActions) and (key == self.preKeyActions[idx]):
                 interval = int(round(time.time() * 1000000)) - int(key.split("_")[-1])
                 sendCount = self.history['sendCount'].get(idx, 0)
@@ -103,6 +106,8 @@ class KeyStateDecoder():
                 elif interval > keyTime2 and (sendCount < (interval - keyTime3) / keyTime2 + 1):
                     sendCount += 1
                     self.history['sendCount'][idx] = sendCount
+                    if key.find("shift") > -1:
+                        continue
                 else:
                     continue
             if (len(key) > 0) and (not key in self.preKeyActions):
