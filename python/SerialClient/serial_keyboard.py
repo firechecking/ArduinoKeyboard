@@ -10,6 +10,7 @@ import serial
 import time
 from python.SerialClient.KeyStateDecoder import KeyStateDecoder
 
+
 def decodeKeys(bytes_values):
     keystates = []
     state_dic = {0: "null", 1: "press", 2: "hold", 3: "error"}
@@ -21,6 +22,7 @@ def decodeKeys(bytes_values):
             keystates.append(state_dic[state])
     return keystates
 
+
 if __name__ == "__main__":
     serialPath = '/dev/cu.usbmodem14201'
     ser = serial.Serial(serialPath, 115200)  # open serial port
@@ -30,13 +32,13 @@ if __name__ == "__main__":
 
     while True:
         # get byte data
-        value = ser.read(11)
-        # get each keyswitch state
-        keyState = decodeKeys(value)
+        if ser.inWaiting() > 0:
+            value = ser.read(11)
+            # get each keyswitch state
+            keyState = decodeKeys(value)
+            # store current keyswitch state
+            keyStateDecoder.addNewState(keyState)
 
-        # store current keyswitch state
-        keyStateDecoder.addNewState(keyState)
         # do keyboard action
         keyStateDecoder.simulateKeyAction()
-
         time.sleep(0.01)

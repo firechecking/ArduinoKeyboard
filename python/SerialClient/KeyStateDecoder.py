@@ -15,7 +15,7 @@ class KeyStateDecoder():
     def __init__(self):
         self.keyStates = []
         self.preKeyActions = {}
-        self.history = {"keycodes": {}}
+        self.history = {"keycodes": {}, "sendCount": {}}
         self.quantums = []
 
     def addNewState(self, keyState):
@@ -32,7 +32,7 @@ class KeyStateDecoder():
 
         # get pressed keycode list
         cur_state = self.keyStates[-1]
-        keycodes = {"example": "keycode_timestamp"}
+        keycodes = {}
         for i, v in enumerate(cur_state):
             if i in keymap:
                 if v == 'press':
@@ -80,6 +80,9 @@ class KeyStateDecoder():
                 self.quantums.append(key)
 
     def simulateKeyAction(self):
+        keyTime1 = 20 * 1000
+        keyTime2 = 80 * 1000
+        keyTime3 = 500 * 1000
         if len(self.keyStates) < 1: return
         # get keycode from activated keylayer
         keycodes = self.decodeKeyAction()
@@ -89,14 +92,22 @@ class KeyStateDecoder():
             if not idx in keycodes:
                 if key.startswith("MO") or key.startswith("TG") or key.startswith("TO") or key.startswith('LOWER'): continue
                 if len(key) < 1: continue
-                if key.startswith('example'): continue
                 pyautogui.keyUp(key.split("_")[0], _pause=False)
-        for idx, key in keycodes.items():
-            if (idx in self.preKeyActions) and (key == self.preKeyActions[idx]): continue
+                self.history['sendCount'][idx] = 0
+            if (idx in self.preKeyActions) and (key == self.preKeyActions[idx]):
+                interval = int(round(time.time() * 1000000)) - int(key.split("_")[-1])
+                sendCount = self.history['sendCount'].get(idx, 0)
+                if interval < keyTime1 and sendCount < 1:
+                    sendCount += 1
+                    self.history['sendCount'][idx] = sendCount
+                elif interval > keyTime2 and (sendCount < (interval - keyTime3) / keyTime2 + 1):
+                    sendCount += 1
+                    self.history['sendCount'][idx] = sendCount
+                else:
+                    continue
             if (len(key) > 0) and (not key in self.preKeyActions):
                 if key.startswith("MO") or key.startswith("TG") or key.startswith("TO") or key.startswith('LOWER'): continue
                 if len(key) < 1: continue
-                if key.startswith('example'): continue
                 pyautogui.keyDown(key.split("_")[0], _pause=False)
         self.preKeyActions = keycodes
 
