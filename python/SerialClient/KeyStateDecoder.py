@@ -40,7 +40,7 @@ class KeyStateDecoder():
                         keycodes[i] = self.history['keycodes'][i]
                     else:
                         keycodes[i] = "{}_{}".format(keymap[i], int(round(time.time() * 1000000)))
-        self.history['keycodes'] = keycodes
+        self.history['keycodes'] = keycodes.copy()
         return keycodes
 
     def parseQuantum(self, keycodes):
@@ -62,22 +62,26 @@ class KeyStateDecoder():
         for idx, key in keycodes.items():
             if key.startswith('MO'):
                 layer_state[int(key.split('_')[1])] = 1
-                self.quantums.append(key)
+                if key not in self.quantums:
+                    self.quantums.append(key)
             if key.startswith('TG'):
                 layer_state[int(key.split('_')[1])] = 1 - layer_state[int(key.split('_')[1])]
-                self.quantums.append(key)
+                if key not in self.quantums:
+                    self.quantums.append(key)
             if key.startswith('TO'):
                 layer_set = int(key.split('_')[1])
                 for i in range(layer_set, len(layer_state)):
                     layer_state[i] = 0
                 layer_state[layer_set] = 1
-                self.quantums.append(key)
+                if key not in self.quantums:
+                    self.quantums.append(key)
             if key.startswith("LOWER"):
                 idx = len(layer_state) - 1
                 while idx > 0 and layer_state[idx] < 1:
                     idx -= 1
                 layer_state[idx] = 0
-                self.quantums.append(key)
+                if key not in self.quantums:
+                    self.quantums.append(key)
 
     def simulateKeyAction(self):
         keyTime1 = 20 * 1000
@@ -87,7 +91,6 @@ class KeyStateDecoder():
         # get keycode from activated keylayer
         keycodes = self.decodeKeyAction()
         self.parseQuantum(keycodes)
-
         # release key
         for idx, key in self.preKeyActions.items():
             if not idx in keycodes:
@@ -97,6 +100,7 @@ class KeyStateDecoder():
                 self.history['sendCount'][idx] = 0
         # press key
         for idx, key in keycodes.items():
+            if len(key) < 1: continue
             if (idx in self.preKeyActions) and (key == self.preKeyActions[idx]):
                 interval = int(round(time.time() * 1000000)) - int(key.split("_")[-1])
                 sendCount = self.history['sendCount'].get(idx, 0)

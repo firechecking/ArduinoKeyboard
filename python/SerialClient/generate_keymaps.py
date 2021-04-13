@@ -24,7 +24,8 @@ keys_layout = [43, 39, 35, 31, 27, 19, 15, 11, 7, 3,
 keycode_maps = {"SCLN": ';', "QUOT": "'", "BSLS": "\\", "COMM": ",", "DOT": ".", "SLSH": "/", "LCTL": "ctrl", "LALT": "alt", "LGUI": "command",
                 "LSFT": "shift",
                 "BSPC": "backspace", "SPC": "space", 'MINS': "-", 'EQL': '=', "ENT": "enter", "EXLM": '!', 'at': '@',
-                'DLR': '$', 'PERC': '%', 'PGUP': 'pageup', 'LPRN': '(','RGHT':'right', 'RPRN': ')', 'PGDN': 'pagedown', 'LBRC': '[', 'RBRC': ']', 'HASH': '#',
+                'DLR': '$', 'PERC': '%', 'PGUP': 'pageup', 'LPRN': '(', 'RGHT': 'right', 'RPRN': ')', 'PGDN': 'pagedown', 'LBRC': '[', 'RBRC': ']',
+                'HASH': '#',
                 'LCBR': '{', 'RCBR': '}',
                 'CIRC': '^', 'AMPR': '&', 'ASTR': '*', 'PLUS': '+', "INS": 'insert', "TRNS": "LOWER", 'VOLU': 'volumeup', 'VOLD': 'volumedown',
                 'PSCR': 'printscreen', 'SLCK': 'scrolllock', 'PAUS': 'pause'}
@@ -35,6 +36,8 @@ def convert_keycode(key):
     key = keycode_maps.get(key, key)
     if key.startswith('MO') or key.startswith('TG') or key.startswith('TO'):
         key = '{}_{}'.format(key.split('(')[0], key.split('(')[-1].split(')')[0])
+    elif key.startswith('LOWER'):
+        pass
     else:
         key = key.lower()
     return key
