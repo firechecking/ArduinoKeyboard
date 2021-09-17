@@ -28,7 +28,7 @@ keycode_maps = {"SCLN": ';', "QUOT": "'", "BSLS": "\\", "COMM": ",", "DOT": ".",
                 'HASH': '#',
                 'LCBR': '{', 'RCBR': '}',
                 'CIRC': '^', 'AMPR': '&', 'ASTR': '*', 'PLUS': '+', "INS": 'insert', "TRNS": "LOWER", 'VOLU': 'volumeup', 'VOLD': 'volumedown',
-                'PSCR': 'printscreen', 'SLCK': 'scrolllock', 'PAUS': 'pause'}
+                'PSCR': 'printscreen', 'SLCK': 'scrolllock', 'PAUS': 'pause','AT':'@'}
 
 
 def convert_keycode(key):

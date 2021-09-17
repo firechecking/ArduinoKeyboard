@@ -25,6 +25,7 @@ def decodeKeys(bytes_values):
 
 if __name__ == "__main__":
     serialPath = '/dev/cu.usbmodem14201'
+    serialPath = '/dev/cu.usbmodem14101'
     ser = serial.Serial(serialPath, 115200)  # open serial port
     print(ser.name)  # check which port was really used
 
@@ -36,6 +37,7 @@ if __name__ == "__main__":
             value = ser.read(11)
             # get each keyswitch state
             keyState = decodeKeys(value)
+            # print(keyState)
             # store current keyswitch state
             keyStateDecoder.addNewState(keyState)
 
