@@ -6,8 +6,9 @@
 # @Software: Experiments
 # @Description: serial_keyboard
 
+from sys import path
+import time, os
 import serial
-import time
 from python.SerialClient.KeyStateDecoder import KeyStateDecoder
 
 
@@ -33,10 +34,23 @@ def decodeKeys(bytes_values):
     return keystates
 
 
+def get_serial_list():
+    devices = []
+    for root, dirs, files in os.walk("/dev", topdown=True):
+        for name in files:
+            if name.lower().find('usb') > -1:
+                devices.append(os.path.join(root, name))
+    return devices
+
+
 if __name__ == "__main__":
-    serialPath = '/dev/cu.usbmodem14201'
-    serialPath = '/dev/cu.usbmodem14101'
-    ser = serial.Serial(serialPath, 115200)  # open serial port
+    paths = get_serial_list()
+    for i, path in enumerate(paths):
+        print(f'{i+1}: {path}')
+
+    idx = int(input("choose keyboard serial path: "))
+
+    ser = serial.Serial(paths[idx - 1], 115200)  # open serial port
     print(ser.name)  # check which port was really used
 
     keyStateDecoder = KeyStateDecoder()
@@ -52,5 +66,5 @@ if __name__ == "__main__":
             keyStateDecoder.addNewState(keyState)
 
         # do keyboard action
-        keyStateDecoder.simulateKeyAction() # 根据键盘当前做在层布局，进行键盘按键模拟
+        keyStateDecoder.simulateKeyAction()  # 根据键盘当前做在层布局，进行键盘按键模拟
         time.sleep(0.01)
