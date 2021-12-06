@@ -12,6 +12,16 @@ from python.SerialClient.KeyStateDecoder import KeyStateDecoder
 
 
 def decodeKeys(bytes_values):
+    """Convert bytes to keystate list
+
+    Args:
+        bytes_values: 11 bytes input get from serial keyboard
+
+    Returns:
+        A list of key states contains 'null', 'press', 'hold', ''
+
+        ['null', 'null', 'null', 'null', 'null', 'null', 'null', 'null', 'null', 'null', 'null', 'null', 'press', 'null', ...]
+    """
     keystates = []
     state_dic = {0: "null", 1: "press", 2: "hold", 3: "error"}
     for i in range(len(bytes_values)):
@@ -36,11 +46,11 @@ if __name__ == "__main__":
         if ser.inWaiting() > 0:
             value = ser.read(11)
             # get each keyswitch state
-            keyState = decodeKeys(value)
+            keyState = decodeKeys(value)  # 从字节中解析出每个按键的按下、释放、保持等状态
             # print(keyState)
             # store current keyswitch state
             keyStateDecoder.addNewState(keyState)
 
         # do keyboard action
-        keyStateDecoder.simulateKeyAction()
+        keyStateDecoder.simulateKeyAction() # 根据键盘当前做在层布局，进行键盘按键模拟
         time.sleep(0.01)
