@@ -2,15 +2,17 @@
 #include "USBKeyboard.h"
 #include "KeyMaps.h"
 
-#define KEYCODE(idx, i, j) keymaps[idx * NUM_INPUT * NUM_OUTPUT + i * NUM_INPUT + j]
-#define KEYVALUE(idx, i, j) keymapsValue[idx * NUM_INPUT * NUM_OUTPUT + i * NUM_INPUT + j]
-#define KEY_PRESSED(i, j) (pinState[i][j] == 0 && pinValues[i][j] > 2)
-#define KEY_RELEASED(i, j) (pinState[i][j] == 1 && pinValues[i][j] < 1)
+#define KEYCODE(k, i, j) keymaps[k * NUM_INPUT * NUM_OUTPUT + i * NUM_INPUT + j]
+// #define KEYVALUE(k, i, j) keymapsValue[k * NUM_INPUT * NUM_OUTPUT + i * NUM_INPUT + j]
+// #define KEYSTATE(k, i, j) key_state[k * NUM_INPUT * NUM_OUTPUT + i * NUM_INPUT + j]
+// #define KEY_PRESSED(k, i, j) (KEYSTATE(k, i, j) == 0 && idx == k && pinValues[i][j] > 2)
+// #define KEY_RELEASED(k, i, j) (idx != k || (KEYSTATE(k, i, j) == 1 && pinValues[i][j] < 1))
 
 USBKeyboard::USBKeyboard(/* args */)
 {
     Keyboard.begin();
-
+    for (int i = 0; i < KEYBUFFER; i++)
+        prePressedKeyIdxs[i] = 0xFF;
     for (int i = 0; i < NUM_INPUT; i++)
     {
         pinMode(inPins[i], INPUT_PULLUP);
@@ -21,7 +23,6 @@ USBKeyboard::USBKeyboard(/* args */)
         for (int j = 0; j < NUM_INPUT; j++)
         {
             pinValues[i][j] = 0;
-            pinState[i][j] = 0;
         }
     }
 }
@@ -32,82 +33,96 @@ USBKeyboard::~USBKeyboard()
 }
 void USBKeyboard::keyAction()
 {
-    // 根据真实按键名称，处理quantum状态
+    // 记录当前按下的按键
+    decodeKeyAction(); // current pressed key index are keep in pressedKeyIdxs[]
+    // 根据按键，处理quantum状态
     parseQuantum();
-
-    int idx = activatedLayerIdx();
-    // 根据pinValues，获取真实按键名称
-    for (int i = 0; i < NUM_OUTPUT; i++)
-        for (int j = 0; j < NUM_INPUT; j++)
+    // 释放按键
+    for (uint8_t preKeyIdx : prePressedKeyIdxs)
+        if (preKeyIdx < 0xFF)
         {
-            if (pinState[i][j] == 0 && pinValues[i][j] > 2)
-            {
-                // Serial.println("press: " + KEYCODE(idx, i, j)+48);
-                pinState[i][j] = 1;
-                Keyboard.press(KEYCODE(idx, i, j));
-            }
-            else if (pinState[i][j] == 1 && pinValues[i][j] < 1)
-            {
-                // Serial.println("release: " + KEYCODE(idx, i, j)+48);
-                pinState[i][j] = 0;
-                Keyboard.release(KEYCODE(idx, i, j));
-            }
+            if (keymaps[preKeyIdx] == MO || keymaps[preKeyIdx] == TG || keymaps[preKeyIdx] == TO || keymaps[preKeyIdx] == LOWER)
+                continue;
+            int i;
+            for (i = 0; i < KEYBUFFER; i++)
+                if (pressedKeyIdxs[i] == 0xFF || pressedKeyIdxs[i] == preKeyIdx)
+                    break;
+            if (pressedKeyIdxs[i] == 0xFF) // not contains in pressedKeyIdxs
+                Keyboard.release(keymaps[preKeyIdx]);
         }
+    // 新增按键
+    for (uint8_t keyIdx : pressedKeyIdxs)
+    {
+        if (keyIdx == 0xFF)
+            break;
+        if (keymaps[keyIdx] == MO || keymaps[keyIdx] == TG || keymaps[keyIdx] == TO || keymaps[keyIdx] == LOWER)
+            continue;
+        int i;
+        for (i = 0; i < KEYBUFFER; i++)
+            if (prePressedKeyIdxs[i] == 0xFF || prePressedKeyIdxs[i] == keyIdx)
+                break;
+        if (prePressedKeyIdxs[i] == 0xFF) // not contains in prePressedKeyIdxs
+            Keyboard.press(keymaps[keyIdx]);
+    }
+    // 保存按键记录
+    for (int i = 0; i < KEYBUFFER; i++)
+        prePressedKeyIdxs[i] = pressedKeyIdxs[i];
 }
 void USBKeyboard::parseQuantum()
 {
-    int idx = activatedLayerIdx();
-    for (int i = 0; i < NUM_OUTPUT; i++)
-        for (int j = 0; j < NUM_INPUT; j++)
+    // 释放按键
+    for (uint8_t preKeyIdx : prePressedKeyIdxs)
+        if (preKeyIdx < 0xFF)
         {
-            if (KEYCODE(idx, i, j) == MO)
+            if (keymaps[preKeyIdx] == MO)
             {
-                if (KEY_PRESSED(i, j))
-                {
-                    pinState[i][j] = 1;
-                    int tgt_idx = KEYVALUE(idx, i, j);
-                    layer_state[tgt_idx] = 1;
-                    Serial.println("press_MO");
-                }
-                else if (KEY_RELEASED(i, j))
-                {
-                    pinState[i][j] = 0;
-                    int tgt_idx = KEYVALUE(idx, i, j);
-                    layer_state[tgt_idx] = 0;
-                    Serial.println("release_MO");
-                }
+                int i;
+                for (i = 0; i < KEYBUFFER; i++)
+                    if (pressedKeyIdxs[i] == 0xFF || pressedKeyIdxs[i] == preKeyIdx)
+                        break;
+                if (pressedKeyIdxs[i] == 0xFF) // not contains in pressedKeyIdxs
+                    layer_state[keymapsValue[preKeyIdx]] = 0;
             }
-            if (KEYCODE(idx, i, j) == LOWER)
-            {
-                if (KEY_PRESSED(i, j))
-                {
-                    pinState[i][j] = 1;
-                    layer_state[idx] = 0;
-                    Serial.println("press_LOWER");
-                }
-                else if (KEY_RELEASED(i, j))
-                {
-                    pinState[i][j] = 0;
-                    layer_state[idx] = 0;
-                    Serial.println("release_LOWER");
-                }
-            }
-            
-            // if (KEY_PRESSED(i, j) && (TO_VALUE(KEYCODE(idx, i, j)) > -1))
-            // {
-            //     Serial.println("press_TO: " + KEYCODE(idx, i, j) + TO_VALUE(KEYCODE(idx, i, j)));
-            // }
-            // if (KEY_PRESSED(i, j) && (LOWER_VALUE(KEYCODE(idx, i, j)) > -1))
-            // {
-            //     Serial.println("press_LOWER: " + KEYCODE(idx, i, j) + LOWER_VALUE(KEYCODE(idx, i, j)));
-            // }
         }
+    // 新增按键
+    for (uint8_t keyIdx : pressedKeyIdxs)
+    {
+        if (keyIdx == 0xFF)
+            break;
+        if (keymaps[keyIdx] == MO || keymaps[keyIdx] == TG || keymaps[keyIdx] == TO || keymaps[keyIdx] == LOWER)
+        {
+            int i;
+            for (i = 0; i < KEYBUFFER; i++)
+                if (prePressedKeyIdxs[i] == 0xFF || prePressedKeyIdxs[i] == keyIdx)
+                    break;
+            if (prePressedKeyIdxs[i] == 0xFF) // not contains in prePressedKeyIdxs
+            {
+                int layer_set = keymapsValue[keyIdx];
+                if (keymaps[keyIdx] == MO)
+                    layer_state[layer_set] = 1;
+                else if (keymaps[keyIdx] == TG)
+                    layer_state[layer_set] = 1 - layer_state[layer_set];
+                else if (keymaps[keyIdx] == TO)
+                {
+                    for (int j = layer_set + 1; j < NUM_LAYERS; j++)
+                        layer_state[j] = 0;
+                    layer_state[layer_set] = 1;
+                }
+                else if (keymaps[keyIdx] == LOWER)
+                {
+                    int idx = activatedLayerIdx();
+                    if (idx > 0)
+                        layer_state[idx] = 0;
+                }
+            }
+        }
+    }
 }
 int USBKeyboard::activatedLayerIdx()
 {
     // 获取当前激活的keymap layer index
     int idx = NUM_LAYERS - 1;
-    while (idx >= 0 && layer_state[idx] == 0)
+    while (idx > 0 && layer_state[idx] == 0)
     {
         idx -= 1;
     }
@@ -116,6 +131,27 @@ int USBKeyboard::activatedLayerIdx()
         idx = default_layer_idx;
     }
     return idx;
+}
+void USBKeyboard::decodeKeyAction()
+{
+    int idx = activatedLayerIdx();
+    int cnt = 0;
+
+    for (int i = 0; i < NUM_OUTPUT; i++)
+        for (int j = 0; j < NUM_INPUT; j++)
+            if (pinValues[i][j] > 2)
+            {
+                pressedKeyIdxs[cnt] = idx * NUM_INPUT * NUM_OUTPUT + i * NUM_INPUT + j;
+                cnt++;
+            }
+    for (int i = cnt; i < KEYBUFFER; i++)
+        pressedKeyIdxs[i] = 0xFF;
+    for (int i = 0; i < KEYBUFFER; i++)
+        if (pressedKeyIdxs[i] < 0xFF)
+        {
+            Serial.print(pressedKeyIdxs[i]);
+            Serial.println();
+        }
 }
 void USBKeyboard::scanPinValues()
 {
@@ -147,6 +183,5 @@ void USBKeyboard::serialDebug()
     for (int i = 0; i < NUM_OUTPUT; i++)
         for (int j = 0; j < NUM_INPUT; j++)
             Serial.print(pinValues[i][j]);
-    Serial.println();
     Serial.println();
 }

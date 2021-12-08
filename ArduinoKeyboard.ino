@@ -1,9 +1,7 @@
 #include "USBKeyboard.h"
-
 USBKeyboard usbKeyboard;
 void setup()
 {
-    int i, j;
     Serial.begin(9600);
     // while (!Serial)
     // {
@@ -14,7 +12,7 @@ void setup()
 void loop()
 {
     usbKeyboard.scanPinValues();
-//    usbKeyboard.serialDebug();
+    // usbKeyboard.serialDebug();
     usbKeyboard.keyAction();
     delay(1);
 }
