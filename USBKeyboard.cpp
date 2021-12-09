@@ -3,10 +3,6 @@
 #include "KeyMaps.h"
 
 #define KEYCODE(k, i, j) keymaps[k * NUM_INPUT * NUM_OUTPUT + i * NUM_INPUT + j]
-// #define KEYVALUE(k, i, j) keymapsValue[k * NUM_INPUT * NUM_OUTPUT + i * NUM_INPUT + j]
-// #define KEYSTATE(k, i, j) key_state[k * NUM_INPUT * NUM_OUTPUT + i * NUM_INPUT + j]
-// #define KEY_PRESSED(k, i, j) (KEYSTATE(k, i, j) == 0 && idx == k && pinValues[i][j] > 2)
-// #define KEY_RELEASED(k, i, j) (idx != k || (KEYSTATE(k, i, j) == 1 && pinValues[i][j] < 1))
 
 USBKeyboard::USBKeyboard(/* args */)
 {
@@ -23,6 +19,7 @@ USBKeyboard::USBKeyboard(/* args */)
         for (int j = 0; j < NUM_INPUT; j++)
         {
             pinValues[i][j] = 0;
+            pinState[i][j] = NUM_LAYERS + 10;
         }
     }
 }
@@ -134,6 +131,8 @@ int USBKeyboard::activatedLayerIdx()
 }
 void USBKeyboard::decodeKeyAction()
 {
+    /* get the real keycode.
+    */
     int idx = activatedLayerIdx();
     int cnt = 0;
 
@@ -141,17 +140,23 @@ void USBKeyboard::decodeKeyAction()
         for (int j = 0; j < NUM_INPUT; j++)
             if (pinValues[i][j] > 2)
             {
-                pressedKeyIdxs[cnt] = idx * NUM_INPUT * NUM_OUTPUT + i * NUM_INPUT + j;
+                if (pinState[i][j] > NUM_LAYERS)
+                    pinState[i][j] = idx;
+                pressedKeyIdxs[cnt] = pinState[i][j] * NUM_INPUT * NUM_OUTPUT + i * NUM_INPUT + j;
                 cnt++;
             }
+            else
+                pinState[i][j] = NUM_LAYERS + 10;
     for (int i = cnt; i < KEYBUFFER; i++)
         pressedKeyIdxs[i] = 0xFF;
+#ifdef __DEBUG__
     for (int i = 0; i < KEYBUFFER; i++)
         if (pressedKeyIdxs[i] < 0xFF)
         {
             Serial.print(pressedKeyIdxs[i]);
             Serial.println();
         }
+#endif
 }
 void USBKeyboard::scanPinValues()
 {

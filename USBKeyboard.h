@@ -1,7 +1,7 @@
 #ifndef __USBKEYBOARD__
 #define __USBKEYBOARD__
+#define __DEBUG__
 #include <Arduino.h>
-
 #define NUM_INPUT 4
 #define NUM_OUTPUT 11
 
@@ -12,6 +12,7 @@ class USBKeyboard
 {
 private:
     int pinValues[NUM_OUTPUT][NUM_INPUT]; // 按键持续计数，按下+1，没按下-1，与pinValueBuffer结合，用于去除噪音抖动
+    int pinState[NUM_OUTPUT][NUM_INPUT];
     int pressedKeyIdxs[KEYBUFFER];
     int prePressedKeyIdxs[KEYBUFFER];
 
