@@ -70,11 +70,9 @@ def apply_cpp_template(default_layer_index, keymaps):
 #define TG 0xE1
 #define TO 0xE2
 #define LOWER 0xE3
-#define KEY_BUFFER 10
 
 uint8_t keymaps[NUM_LAYERS * $num_keys] = {$keymaps_str};
 uint8_t keymapsValue[NUM_LAYERS * $num_keys] = {$keymaps_value};
-uint8_t pressIndex[10] = {$key_state};
 int layer_state[NUM_LAYERS] = {$layer_state};
 #endif"""
     keymaps = keymaps[:2]
@@ -101,7 +99,7 @@ int layer_state[NUM_LAYERS] = {$layer_state};
                 keymaps_str += f"{char}"
             keymaps_value.append(0)
         keymaps_str += ','
-    keymaps_str = keymaps_str.replace("'\\'", '0x2F').replace('\n', '\\n').replace("'''", "0x27")
+    keymaps_str = keymaps_str.replace("'\\'", '0x5c').replace('\n', '\\n').replace("'''", "0x27")
     layer_state = [1 if i == default_layer_index else 0 for i, _ in enumerate(keymaps)]
     layer_state = json.dumps(layer_state)
     key_state = [-1 for _ in range(10)]
